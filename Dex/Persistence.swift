@@ -47,7 +47,7 @@ struct PersistenceController {
         }
         return result
     }()
-    // the thing tha holds the stuff (the database)
+    // the thing that holds the stuff (the database)
     let container: NSPersistentContainer
     
     //just a regular init function
