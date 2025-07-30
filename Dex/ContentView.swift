@@ -72,7 +72,7 @@ struct ContentView: View {
                                 
                                 VStack(alignment: .leading) {
                                     HStack {
-                                        Text(pokemon.name!.capitalized)
+                                        Text("#\(pokemon.id) \(pokemon.name!.capitalized)")
                                             .fontWeight(.bold)
                                         
                                         if pokemon.favorite {
