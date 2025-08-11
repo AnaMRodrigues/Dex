@@ -5,66 +5,29 @@
 //  Created by Ana Clara Moreira Rodrigues on 12/06/25.
 //
 
-import CoreData
+import SwiftData
+import Foundation //JSONDecoder
 
+@MainActor
 struct PersistenceController {
-    //the thing that controls our database
-    static let shared = PersistenceController()
-    
     static var previewPokemon: Pokemon {
-        let context = PersistenceController.preview.container.viewContext
+        let decoder = JSONDecoder()
         
-        let fetchRequest: NSFetchRequest<Pokemon> = Pokemon.fetchRequest()
-        fetchRequest.fetchLimit = 1
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
         
-        let results = try! context.fetch(fetchRequest)
+        let pokemonData = try! Data(contentsOf: Bundle.main.url(forResource: "samplepokemon", withExtension: "json")!)
         
-        return results.first!
+        let pokemon = try! decoder.decode(Pokemon.self, from: pokemonData)
+        
+        return pokemon
     }
 
-    //the thing that controls our sample preview database
-    static let preview: PersistenceController = {
-        let result = PersistenceController(inMemory: true)
-        let viewContext = result.container.viewContext
+    // Our sample preview database
+    static let preview: ModelContainer = {
+        let container = try! ModelContainer(for: Pokemon.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         
-        let newPokemon = Pokemon(context: viewContext)
-        newPokemon.id = 1
-        newPokemon.name = "bulbasaur"
-        newPokemon.types = ["grass", "poison"]
-        newPokemon.hp = 45
-        newPokemon.attack = 49
-        newPokemon.defense = 49
-        newPokemon.specialAttack = 65
-        newPokemon.specialDefense = 65
-        newPokemon.speed = 45
-        newPokemon.spriteURL = URL(string: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png")
-        newPokemon.shinyURL = URL(string: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/1.png")
+        container.mainContext.insert(previewPokemon)
         
-        do {
-            try viewContext.save()
-        } catch {
-            print(error)
-        }
-        return result
+        return container
     }()
-    // the thing that holds the stuff (the database)
-    let container: NSPersistentContainer
-    
-    //just a regular init function
-    init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "Dex")
-        if inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
-        } else {
-            container.persistentStoreDescriptions.first!.url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.anaapps.DexGroup")!.appending(path: "Dex.sqlite")
-        }
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                print(error)
-            }
-        })
-        
-        container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump
-        container.viewContext.automaticallyMergesChangesFromParent = true
-    }
 }
