@@ -8,6 +8,7 @@
 import SwiftData
 import Foundation //JSONDecoder
 
+// When the stuf in here is going to type directly to the view
 @MainActor
 struct PersistenceController {
     static var previewPokemon: Pokemon {
