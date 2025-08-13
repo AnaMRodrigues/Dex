@@ -18,23 +18,19 @@ struct ContentView: View {
     
     let fetcher = FetchService()
     
-    private var dynamicPredicate: NSPredicate {
-        var predicates: [NSPredicate] = []
-        
-        //Search Predicate
-        if !searchText.isEmpty {
-            //[c] is for the code don't worry about the case sensitivity(Uppercase, lowercase)
-            predicates.append(NSPredicate(format: "name contains[c] %@", searchText))
+    private var dynamicPredicate: Predicate<Pokemon> {
+        #Predicate<Pokemon> { pokemon in
+            if filterByFavorites && !searchText.isEmpty {
+                pokemon.favorite && pokemon.name.localizedStandardContains(searchText)
+            } else if !searchText.isEmpty {
+                pokemon.name.localizedStandardContains(searchText)
+            } else if filterByFavorites {
+                pokemon.favorite
+            } else {
+                //if there's no filter, just show it all
+                true
+            }
         }
-        
-        //filter by favorite predicate
-        if filterByFavorites {
-            predicates.append(NSPredicate(format: "favorite == %d", true))
-        }
-        
-        
-        //combine predicates
-        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
 
     var body: some View {
@@ -54,7 +50,8 @@ struct ContentView: View {
             NavigationStack {
                 List {
                     Section {
-                        ForEach(pokedex) { pokemon in
+                        // try to apply dynamicPredicate, if not, just show the pokedex
+                        ForEach((try? pokedex.filter(dynamicPredicate)) ?? pokedex) { pokemon in
                             NavigationLink(value: pokemon) {
                                 if pokemon.sprite == nil {
                                     AsyncImage(url: pokemon.spriteURL) { image in
@@ -130,13 +127,16 @@ struct ContentView: View {
                 .navigationTitle("Pokedex")
                 .searchable(text: $searchText, prompt: "Find a Pokemon")
                 .autocorrectionDisabled()
+                .animation(.default, value: searchText)
                 .navigationDestination(for: Pokemon.self) { pokemon in
                     PokemonDetail(pokemon: pokemon)
                 }
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
-                            filterByFavorites.toggle()
+                            withAnimation {
+                                filterByFavorites.toggle()
+                            }
                         } label: {
                             Label("Filter By Favorites", systemImage: filterByFavorites ? "star.fill" : "star")
                         }
